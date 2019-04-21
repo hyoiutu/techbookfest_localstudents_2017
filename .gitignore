@@ -284,6 +284,7 @@ book.pdf
 main.pdf
 
 \.DS_Store
+test/
 
 # Python
 .mypy_cache/
