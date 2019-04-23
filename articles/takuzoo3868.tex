@@ -2,7 +2,7 @@
 \section{はじめに}
 \faTwitterSquare \,\href{https://twitter.com/hasherezade}{@hasherazade}氏が開催したMalwarebytes CrackMe 2: try another challengeのWriteUPです．CTFより問題の目的がはっきりしているため，世の中のマルウェアへ抗う手段を模索したい方，マルウェア解析者になりたい方におすすめです．
 
-開催時は作者のGoogleDriveから入手できましたが，現在は\href{http://tinyurl.com/ybuf6z2h}{hybrid-analysis}\footnote{http://tinyurl.com/ybuf6z2h}にアップロードされています\footnote{検体の入手には認証が必要ですのでご注意を}．\faFileCodeO \,mb\_crackme\_2.exeは8.3MiB程度の実行ファイルです．主たる解析の流れは図\ref{fig:malware_analysis}に示した通りです．筆者はWindows10にflare-vm\footnote{マルウェア解析用にFireEye社がカスタマイズしたWindows用ツール群}を当てた環境で問題を解いています．それでは次の節から解説をはじめます．
+開催時は作者のGoogleDriveから入手できましたが，現在は\href{http://tinyurl.com/ybuf6z2h}{hybrid-analysis}\footnote{http://tinyurl.com/ybuf6z2h}にアップロードされています\footnote{検体の入手には認証が必要ですのでご注意を}．\faFileCodeO \,\textbf{mb\_crackme\_2.exe}は8.3MiB程度の実行ファイルです．主たる解析の流れは図\ref{fig:malware_analysis}に示した通りです．筆者はWindows10にflare-vm\footnote{マルウェア解析用にFireEye社がカスタマイズしたWindows用ツール群}を当てた環境で問題を解いています．それでは次の節から解説をはじめます．
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.85\linewidth]{./assets/takuzoo3868asset/flow_gray.png}
@@ -40,14 +40,14 @@ pvxHxhxXxxxDxdxTxtxLxlx\x|xBxbxRxrxJxjxZxzxFxfxVxvxNxnx^x~xAx
 opyi-windows-manifest-filename another.exe.manifest
 \end{verbatim}
 \end{tcolorbox}
-flare-flossはstringsよりも強力な文字列解析ができるツールです．どうやらエラーメッセージではPythonらしきシンボルの読み出しを行っている様に思えます．よって今回はPythonスクリプトが難読化されていると目星をつけます．難読化されたPythonのスクリプトは俗にFrozen Pythonと呼ばれ，実行可能ファイルへ変換されていることがあります．このケースでは実行アプリケーションのバイトコードと依存パッケージのバイトコードが同封されている可能性が高いです．それでは確認のために，Process Explorerを使ってプログラム実行時にどのライブラリを読み込んでいるのか調査してみましょう．図\ref{fig:crackme_detail}に示したように，mb\_crackme\_2.exeはローカルにある\textbf{temp}ディレクトリからpython27.dllなどを読み出す自分のコピーを生成した様子を確認できるはずです．オリジナルのmb\_crackme\_2.exeが\textbf{\_MEI5282/temp}ディレクトリを作成し，必要なdllやpydライブラリを書き込んだのではないかと考えられます．
+flare-flossはstringsよりも強力な文字列解析ができるツールです．どうやらエラーメッセージではPythonらしきシンボルの読み出しを行っている様に思えます．よって今回はPythonスクリプトが難読化されていると目星をつけます．難読化されたPythonのスクリプトは俗にFrozen Pythonと呼ばれ，実行可能ファイルへ変換されていることがあります．このケースでは実行アプリケーションのバイトコードと依存パッケージのバイトコードが同封されている可能性が高いです．それでは確認のために，Process Explorerを使ってプログラム実行時にどのライブラリを読み込んでいるのか調査してみましょう．図\ref{fig:crackme_detail}に示したように，mb\_crackme\_2.exeはローカルにある\textbf{temp}ディレクトリからpython27.dllなどを読み出す自分のコピーを生成した様子を確認できるはずです．オリジナルのmb\_crackme\_2.exeが\textbf{\_MEI5282/temp}というディレクトリを作成し，必要なdllやpydライブラリを書き込んだのではないかと考えられます．
 \begin{figure}[H]
     \centering
     \includegraphics[width=\linewidth]{./assets/takuzoo3868asset/proc_gray.png}
     \caption{起動した様子とプロセスの監視}
     \label{fig:crackme_detail}
 \end{figure}
-難読化されたPythonをアンパックするために，python用のアンパッカーである\href{https://github.com/countercept/python-exe-unpacker}{python-exe-unpacker}\footnote{https://github.com/countercept/python-exe-unpacker}を使います．吐き出された中身を見ると，\textbf{another}というコンパイル済みのファイルを確認できます．\href{https://github.com/rocky/python-uncompyle6}{uncompyle6}を使って逆コンパイルを試します\footnote{このツールは拡張子判定に時間がかかるため，予め.pycへ変更しておくと良いです．}が，\texttt{ImportError: Unknown magic number}となり，マジックナンバーが消えている事がわかりました．この記事\footnote{https://0xec.blogspot.com/2017/12/reversing-pyinstaller-based-ransomware.html}を参考にしたところ，PyInstallerを使ったmainスクリプトの圧縮では，時折マジックナンバーを消すことがあるので，\texttt{0x03 0xF3 0x0D 0x0A 0x00 0x00 0x00 0x00}へ書き換える必要があるとわかりました．再度逆コンパイルを試すと\faFileCodeO \,\textbf{another.py}という300行程度のソースコードを取得できました．
+難読化されたPythonをアンパックするために，python用のアンパッカーである\href{https://github.com/countercept/python-exe-unpacker}{python-exe-unpacker}\footnote{https://github.com/countercept/python-exe-unpacker}を使います．吐き出された中身を見ると，\faCogs \,\textbf{another}というコンパイル済みのファイルを確認できます．\href{https://github.com/rocky/python-uncompyle6}{uncompyle6}を使って逆コンパイルを試します\footnote{このツールは拡張子判定に時間がかかるため，予め.pycへ変更しておくと良いです．}が，\texttt{ImportError: Unknown magic number}となり，マジックナンバーが消えている事がわかりました．この記事\footnote{https://0xec.blogspot.com/2017/12/reversing-pyinstaller-based-ransomware.html}を参考にしたところ，PyInstallerを使ったmainスクリプトの圧縮では，時折マジックナンバーを消すことがあるので，\texttt{0x03 0xF3 0x0D 0x0A 0x00 0x00 0x00 0x00}へ書き換える必要があるとわかりました．再度逆コンパイルを試すと\faFileCodeO \,\textbf{another.py}という300行程度のソースコードを取得できました．
 
 \begin{tcolorbox}[title=アンパック, sharp corners, left=2mm]\scriptsize
 \begin{verbatim}
@@ -101,7 +101,7 @@ def stage1_login():
     return key
 \end{minted}
 \end{tcolorbox}
-ユーザー名，パスワード，PINを要求しているようです．また，これらをチェックする関数も見つかりました．ユーザー名はただの平文で\texttt{hackerman}，パスワードについてはMD5でハッシュ化されていますが，オンラインにあるdecryptor toolを使えば\texttt{Password123}とわかります．PINについては少々複雑です．\texttt{get\_url\_key}にPINを渡してキーを生成し，次に\texttt{check\_key}で検証しています．Pythonの乱数生成モジュールを使ってPINをシードとした0から9の数字からなる32桁の数列キーを生成しています．検証ではmd5のハッシュを使っているようです．PINなので4桁の可能性が高いだろうなと予想して，総当たりでキーを生成しMD5ハッシュを検証することにします．
+\texttt{stage1\_login}では\texttt{username}，\texttt{password}，\texttt{PIN}を要求しているようです．また，これらをチェックする関数も見つかりました．ユーザー名はただの平文で\texttt{hackerman}，パスワードについてはMD5でハッシュ化されていますが，オンラインにあるdecryptor toolを使えば\texttt{Password123}とわかります．PINについては少々複雑です．\texttt{get\_url\_key}にPINを渡してキーを生成し，次に\texttt{check\_key}で検証しています．Pythonの乱数生成モジュールを使ってPINをシードとした0から9の数字からなる32桁の数列キーを生成しています．検証ではmd5のハッシュを使っているようです．PINなので4桁の可能性が高いだろうなと予想して，総当たりでキーを生成しMD5ハッシュを検証することにします．
 \begin{tcolorbox}[sharp corners, left=2mm]\scriptsize
 \begin{minted}{python}
 def check_key(key):
@@ -152,7 +152,7 @@ PIN:  9667
 key:  95104475352405197696005814181948
 \end{verbatim}
 \end{tcolorbox}
-これでPINも\texttt{9667}とわかりました．よって，ログインは突破できました\faChild ．
+これでPINも\texttt{9667}とわかりました．よって，ログインは突破できました\faAngellist ．
 \begin{figure}[H]
     \centering
     \includegraphics[width=\linewidth]{./assets/takuzoo3868asset/crack_level1_gray.png}
@@ -161,7 +161,7 @@ key:  95104475352405197696005814181948
 
 
 \section{その② The Secret Console}
-再度ソースコードを見ていきます．\texttt{check\_if\_next}でダイアログを表示し，Level2への準備ができているかどうかの確認を行っています．先程のPINを利用したキーは\texttt{decode\_and\_fetch\_url}へ渡され，AESで暗号化されたURLを復号化しリンク先から何かしらのコンテンツを取得しているように思えます．URLを確認するために\textbf{another.py}へ一行追加して実行してみました．取得できた\faFileImageO \,データを図\ref{fig:decrypt_url_data}に示します．
+再度ソースコードを見ていきます．\texttt{check\_if\_next}でダイアログを表示し，Level2への準備ができているかどうかの確認を行っています．先程のPINを利用したキーは\texttt{decode\_and\_fetch\_url}へ渡され，AESで暗号化されたURLを復号化しリンク先から何かしらのコンテンツを取得しているように思えます．URLを確認するために\texttt{another.py}へ一行追加して実行してみました．取得できた\faFileImageO \,データを図\ref{fig:decrypt_url_data}に示します．
 \begin{tcolorbox}[sharp corners, left=2mm]\scriptsize
 \begin{minted}{python}
 def main():
@@ -213,7 +213,7 @@ DEBUG : URL fetched is : https://i.imgur.com/dTHXed7.png
     \caption{プログラムが取得していた画像データ}
     \label{fig:decrypt_url_data}
 \end{figure}
-一見するとただのPNG形式ですが，明らかに怪しいノイズデータとなっています．無害なファイル形式を装ってコンテンツをローカルへ保存する手法はネットワークの監視をすり抜ける常套手段でもあります．今回の例であれば，監視ツールから見るとimgurからただ画像を取得したと判断されたのだと思います．特にPNG形式は可逆圧縮なのでコンテンツの隠れ蓑として優秀であると言えます\footnote{CTFで言えば意図的に情報を隠すステガノグラフィとして一大分野になっていますよね...？}．関数\texttt{get\_encoded\_data}ではPNG形式のRGB成分からバイトコードへ変換されています．また，フォーマットを解析して，バイトコードからコンテンツを展開するためにPILを使った関数は\texttt{is\_valid\_payl}でした．関数内でチェックしている23117と17744は，16進数へ変換してやるとMZやPEのマジックナンバーであることに気が付きました．つまり，この関数はデコードしたデータをPE形式などの実行可能ファイルへ変換していると推察できます．実行ファイルを抽出するために\textbf{another.py}を再度書き換えます．\texttt{main}では次に\texttt{load\_level2}へデコードしたデータを渡しています．
+一見するとただのPNG形式ですが，明らかに怪しいノイズデータとなっています．無害なファイル形式を装ってコンテンツをローカルへ保存する手法はネットワークの監視をすり抜ける常套手段でもあります．今回の例であれば，監視ツールから見るとimgurからただ画像を取得したと判断されたのだと思います．特にPNG形式は可逆圧縮なのでコンテンツの隠れ蓑として優秀であると言えます\footnote{CTFで言えば意図的に情報を隠すステガノグラフィとして一大分野になっていますよね...？}．関数\texttt{get\_encoded\_data}ではPNG形式のRGB成分からバイトコードへ変換されています．また，フォーマットを解析して，バイトコードからコンテンツを展開するためにPILを使った関数は\texttt{is\_valid\_payl}でした．関数内でチェックしている23117と17744は，16進数へ変換してやるとMZやPEのマジックナンバーであることに気が付きました．つまり，この関数はデコードしたデータをPE形式などの実行可能ファイルへ変換していると推察できます．実行ファイルを抽出するために\texttt{another.py}を再度書き換えます．\texttt{main}では次に\texttt{load\_level2}へデコードしたデータを渡しています．
 \begin{tcolorbox}[sharp corners, left=2mm]\scriptsize
 \begin{minted}{python}
 def is_valid_payl(content):
@@ -288,7 +288,7 @@ Collecting data from file: .\dumped_payload.dll
     \caption{DllMain function}
     \label{fig:ghdra_002}
 \end{figure}
-最初のセクションでは\texttt{AddVectoredExceptionHandler}を呼び出して例外ハンドラを２つ設定しています．ここで面白い処理をしているのが\texttt{0x100011b9}にある\texttt{INT 3}です．割り込みにより自発的に例外を発生させ，例外ハンドラへ遷移するように仕掛けてあります． 解析により2つハンドラは\texttt{Handler\_10001260}，\texttt{Handler\_100011d0}であると判明しています．\texttt{Handler\_10001260}では，\texttt{python27.dll}のロードを検出し，変数\texttt{mb\_chall}にプロセスIDを格納しています．\texttt{EXCEPTION\_CONTINUE\_SEARCH}で最終的には次のハンドラへ遷移します．\texttt{Handler\_100011d0}では，\texttt{python27.dll}のロードを検出し，\texttt{EIP}\footnote{Extended Instruction Pointer Register}を1ずつ或いは6ずつ増やし，プログラムを通常実行するようOSへ指示しています．\texttt{DllMain}では，先程述べた\texttt{INT 3}例外により，例外ハンドラを呼び出すことで\texttt{EIP}には\texttt{INT 3}の先頭である\texttt{0x100011B9}が格納されます．これはマルウェアにおけるアンチデバッグの一種と考えられます．ざっくり言うと，プロセスにアタッチしているデバッガは，この\texttt{INT 3}は例外ハンドラへ渡されたわけではなく，作者が意図的に設定した命令であるとみなしてスルーしてしまいます．Pythonがロードされていないと判定した場合，先程の例外ハンドラはEIPを1増やし，メッセージダイアログを表示する\texttt{FUN\_100010F0}へ移ります．一方で\texttt{python27.dll}がロードされている場合には，\texttt{FUN\_100010F0}をスキップして\texttt{FUN\_00010D0}を呼び出します．
+最初のセクションでは\texttt{AddVectoredExceptionHandler}を呼び出して例外ハンドラを２つ設定しています．ここで面白い処理をしているのが\texttt{0x100011b9}にある\texttt{INT 3}です．割り込みにより自発的に例外を発生させ，例外ハンドラへ遷移するように仕掛けてあります． 解析により2つハンドラは\texttt{Handler\_10001260}，\texttt{Handler\_100011d0}であると判明しています．\texttt{Handler\_10001260}では，\texttt{python27.dll}のロードを検出し，変数\texttt{mb\_chall}にプロセスIDを格納しています．\texttt{EXCEPTION\_CONTINUE\_SEARCH}で最終的には次のハンドラへ遷移します．\texttt{Handler\_100011d0}では，\texttt{python27.dll}のロードを検出し，\texttt{EIP}\footnote{Extended Instruction Pointer Register}を1ずつ或いは6ずつ増やし，プログラムを通常実行するようOSへ指示しています．\texttt{DllMain}では，先程述べた\texttt{INT 3}例外により，例外ハンドラを呼び出すことで\texttt{EIP}には\texttt{INT 3}の先頭である\texttt{0x100011B9}が格納されます．これはマルウェアにおけるアンチデバッグの一種と考えられます．ざっくり言うと，プロセスにアタッチしているデバッガは，この\texttt{INT 3}は例外ハンドラへ渡されたわけではなく，作者が意図的に設定した命令であるとみなしてスルーしてしまいます．Pythonがロードされていないと判定した場合，先程の例外ハンドラは\texttt{EIP}を1増やし，メッセージダイアログを表示する\texttt{FUN\_100010F0}へ移ります．一方で\texttt{python27.dll}がロードされている場合には，\texttt{FUN\_100010F0}をスキップして\texttt{FUN\_00010D0}を呼び出します．
 \begin{figure}[H]
     \centering
     \includegraphics[width=\linewidth]{./assets/takuzoo3868asset/ghidra_003_gray.png}
@@ -433,7 +433,7 @@ def decode_pasted():
     return True
 \end{minted}
 \end{tcolorbox}
-\texttt{main}で呼び出している\texttt{decode\_pasted}に着目すると，Level2で最後に\texttt{actxprxy.dll}を使い復号化したバッファを読み込んでいる様です．
+\texttt{main}で呼び出している\texttt{decode\_pasted}に着目すると，Level2で最後に\faCog \,\texttt{actxprxy.dll}を使い復号化したバッファを読み込んでいる様です．
 \begin{enumerate}
   \item base64で復号化
   \item zlibでデータを解凍
@@ -479,7 +479,7 @@ def print_flag():
 print_flag()
 \end{verbatim}
 \end{tcolorbox}
-flagという文字列が怪しいので，試しにスクリプトを実行するとflagを取得できました\faFlag．\textbf{flag\{"Things are not always what they seem; the first appearance deceives many; the intelligence of a few perceives what has been carefully hidden." - Phaedrus\}}プラトンのパイドロスから引用するとは洒落が効いてますね．これで正解ですがRGBが何だったのかはターミナルカラーの\texttt{MAGENTA}がヒントでした．紫色のRGBを入力すると正解みたいです．お疲れ様でした．
+flagという文字列が怪しいので，試しにスクリプトを実行するとflagを取得できました\faFlag．\textbf{flag\{"Things are not always what they seem; the first appearance deceives many; the intelligence of a few perceives what has been carefully hidden." - Phaedrus\}}プラトンのパイドロスから引用するとは洒落が効いてますね．これで正解ですがRGBが何だったのかはターミナルカラーの\texttt{MAGENTA}がヒントでした．紫色のRGBを入力すると正解みたいです．正攻法が気になります．お疲れ様でした．
 \begin{figure}[H]
     \centering
     \includegraphics[width=\linewidth]{./assets/takuzoo3868asset/crack_level3_gray.png}
@@ -487,7 +487,7 @@ flagという文字列が怪しいので，試しにスクリプトを実行す�
 \end{figure}
 
 \section{終わりに}
-いかがだったでしょうか．いくつかのテクニックは実際にマルウェアを解析する際に役立つはずです．もし興味がお有りでしたら\href{https://crackmes.one/}を訪れてみてください．日夜ユーザー同士が研鑽を積んでいます．昨今，何かと逮捕案件が多くエンジニア界隈が萎縮する傾向にあります．お互いを理解するために少しでも歩み寄りが必要なのではと自分は思います．最後に作家Raymond Chandler氏の言葉をお借りして結びの言葉とします．
+いかがだったでしょうか．いくつかのテクニックは実際にマルウェアを解析する際に役立つはずです．もし興味がお有りでしたら\href{https://crackmes.one/}{こちらのサイト}などを訪れてみてください．日夜ユーザー同士が研鑽を積んでいます．昨今，何かと逮捕案件が多くエンジニア界隈が萎縮する傾向にあります．お互いを理解するために少しでも歩み寄りが必要なのではと自分は思います．最後に作家Raymond Chandler氏の言葉をお借りして結びの言葉とします．
 
 
 
