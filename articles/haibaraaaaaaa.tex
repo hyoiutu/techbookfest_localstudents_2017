@@ -3,7 +3,7 @@
 \footnote{本章に記載されたプログラム，回路図，その他工作物を参考にして製作した場合に生じた事故等について一切の責任を負いかねます．}
 \subsection{ESP-WROOM-02とは}
 ESP-WROOM-02は，上海の企業Espressif Systems のESP8266EXチップを搭載したWiFiモジュールです．いわゆる「技適」を取得しているため，日本国内で法的に安心して使えます．ardiono言語で開発できることに加え，おおよそ600円で購入できる手軽さが魅力です．
-\footnote{ESP-WROOM-02の開発環境の構築方法については， ESP8266 Arduino Coreの公式ドキュメント(\url{https://arduino-esp8266.readthedocs.io/en/latest/})や僕のブログ(\url{https://haibara-works.hatenablog.com})の『ESP-WROOM-02を導入する』を参照してください．(ページ数の都合から割愛します)}
+\footnote{ESP-WROOM-02の開発環境の構築方法については， ESP8266 Arduino Coreの公式ドキュメント(\url{https://arduino-esp8266.readthedocs.io/en/latest/})や，僕のブログ(\url{https://haibara-works.hatenablog.com})の『ESP-WROOM-02を導入する』を参照してください．(ページ数の都合から本章ではその説明は割愛します)}
 
 \subsection{ハードウェアの準備}
 表\ref{buhin}に今回作る自走式WEBサーバーに必要な部品を示します．
@@ -29,9 +29,16 @@ TA7291P & モータードライバ \\ \hline
 \end{table}
 
 \section{WEBサーバーとしての動作}
+最低限のWEBサーバーとして，クライアントがHTTP GETでページを取得できること，不揮発性メモリにファイルを保存できること，不揮発性メモリ内のファイルを作成・改変・削除できるようにすること，の3つの機能を実装しました．
+\subsection{SPIFFSの利用}
+ESPではSPIFFSというファイルシステムを使うことが出来ます．これはESPの不揮発性メモリの一部をストレージとして使えるようにするもので，プログラム中からC言語の\tt{fopen()}\rm{} と同じ要領でメモリにアクセス出来ます．この機能を用いてESPにファイルを保存します．
+また，ArduinoIDEにSPIFFSプラグイン(\url{https://github.com/esp8266/arduino-esp8266fs-plugin})をインストールすると，ArduinoIDEからESPのSPIFFSにファイルをアップロードすることができます．
+ESP8266 Arduino Coreの公式exampleの中にFSBrowserというスケッチが，まさにSPIFFSを用いたWebサーバーの実装になっています(\url{https://github.com/esp8266/Arduino/tree/master/libraries/ESP8266WebServer/examples/FSBrowser})．
+このスケッチにある関数\tt{String formatBytes(size\_t bytes)}\rm{}・\tt{bool handleFileRead(String path)}\rm{}・\tt{void handleFileUpload()}\rm{}・\tt{void handleFileDelete()}\rm{}・\tt{void  handleFileCreate()}\rm{}・\tt{void  handleFileList()}\rm{}を利用します．
+また，FSBrowser.inoと同じディレクトリの\tt{/data}\rm{}内にはいくつかのjsファイルやhtmlファイルが保存されています．その中にはSPIFFSに保存されているファイルの編集・改変・削除，新規ファイルのアップロードを行うことのできるWebGUIとして働くものや，現在のヒープメモリやGPIOの電位などをグラフで提供するものが含まれています．今回はこれらの\tt{/data}\rm{}内のファイルを使用して，SPIFFS管理のためのWebGUIとします．
 
-    \subsection{SPIFFSの利用}
-
+\subsection{Webページの表示}
+\tt{ESP8266WebSerber.h}\rm{}を用いて，クライアントからのHTTPリクエストを処理する際には，\tt{Server.on(path, handlerFunction);}\rm{}と記述することで，"\tt{path}\rm{}がリクエストされたら\tt{handlerFunction}\rm{}を実行する"ということができます．しかし，この方法では処理できる\tt{path}\rm{}の種類がコーディングの時点で固定されてしまいます．今回のようにSPIFFSを用いて，動的にファイルが変わり得る場合はどのように対処すればいいでしょうか．1つの方法は\tt{Server.on(path, handlerFunction)}\rm{}ではなく\tt{Server,onNotFound(handlerFunction)}\rm{}を用いることです．これはクライアントにリクエストされた\tt{path}\rm{}がどの\tt{Server.on}\rm{}でも指定されていない場合に，\tt{handlerFunction}\rm{}を呼び出すという関数で，その名の通り404 Not Foundを返すために使われます．しかし\tt{Server.on}\rm{}を記述しなければ任意の\tt{path}\rm{}がリクエストされたときに必ず\tt{handlerFunction}\rm{}が呼ばれます．この\tt{handlerFunction}\rm{}内で"リクエストされた\tt{path}\rm{}はSPIFFSに存在するか"を判断し，存在すればその\tt{path}\rm{}ごとの処理をし，存在しなければ404 Not Foundをクライアントに送信するという処理を行うことで，SPIFFS内の動的ファイルの変化に対応できます．
 
 \begin{minted}[frame=lines,framesep=2mm,baselinestretch=1.2,fontsize=\footnotesize,linenos,breaklines]{c}
 #include <ESP8266WiFi.h>
@@ -176,7 +183,7 @@ void setup() {
     Server.send(200, "text/json", json);
     json = String();
   });
-  Server.onNotFound(handleSendRes);  ////called when handler is not assigned
+  Server.onNotFound(handleSendRes);
   
   Server.begin();
 }
@@ -186,7 +193,7 @@ void loop() {
   Server.handleClient();
   MDNS.update();
 
-  switch (motor._mode) {
+  switch (motor._mode) { //motor.modeの値によって進行方向を決定する
     case Forw:
       goForward(motor.val);
       break;
@@ -206,9 +213,25 @@ void loop() {
 }
 \end{minted}
 
-
 \section{ラジコンとしての動作}
-%    \subsubsection{}
+\subsection{モータードライバの利用}
+    モーターの制御にはモータードライバIC TA7291Pを使用します．このICはArduinoの入門記事などでよく登場する，とても扱いやすいICです．制御方法も簡単で，2つの入力端子をマイコンのGPOに接続し，2つの出力をモーターのそれぞれの端子に接続して使います．以下にTA7291Pの真理値表を示します．
+\footnote{表中のZはハイインピーダンス(LともHとも定まらない状態)を表します}
+\footnote{正転・逆転はモーターの端子とOUT1・OUT2との接続の仕方によっては逆になります．}
+\begin{table}[H]
+\centering
+\caption{TA7291Pの動作}
+\begin{tabular}{|l|l|l|l|l|} \hline
+IN1 & IN2 & OUT1 & OUT2 & 用途 \\ \hline \hline
+L & L & Z & Z & オープン \\ \hline
+L & H & L & H & 正転 \\ \hline
+H & L & H & L & 逆転 \\ \hline
+H & H & L & L & ブレーキ \\ \hline
+\end{tabular}
+\label{buhin}
+\end{table}
+
+
 
 \begin{minted}[frame=lines,framesep=2mm,baselinestretch=1.2,fontsize=\footnotesize,linenos,breaklines]{c}
 enum { M1_l = 4, M1_r = 5, M2_l = 12, M2_r = 13, Pilot = 16,
@@ -286,5 +309,7 @@ void turnLeft(int16_t velocity) {
 }
 \end{minted}
 
+
 \section{おわりに}
-ESP-WROOM-02を使って自走式WWEBサーバーを作成することができた．今後の課題として，websocketを用いたリアルタイム性の高い操作を実現したい．また，今回の
+ESP-WROOM-02を使って自走式WWEBサーバーを作成することができました．今後の課題として，websocketを用いたリアルタイム性の高い操作を実現したいです．
+今回作成したソースコードは以下のレポジトリにあります．\url{https://github.com/w-haibara/Self-propelledWebServer}
