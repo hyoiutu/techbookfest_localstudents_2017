@@ -28,6 +28,138 @@ TA7291P & モータードライバ \\ \hline
 \label{buhin}
 \end{table}
 
+\section{ラジコンとしての動作}
+\subsection{モータードライバの利用}
+    モーターの制御にはモータードライバIC TA7291Pを使用します．このICはArduinoの入門記事などでよく登場する，とても扱いやすいICです．制御方法も簡単で，2つの入力端子をマイコンのGPOに接続し，2つの出力をモーターのそれぞれの端子に接続して使います．以下にTA7291Pの真理値表を示します．
+\footnote{表中のZはハイインピーダンス(LともHとも定まらない状態)を表します}
+\footnote{正転・逆転はモーターの端子とOUT1・OUT2との接続の仕方によっては逆になります．}
+
+\begin{table}[H]
+\centering
+\caption{TA7291Pの動作}
+\begin{tabular}{|l|l|l|l|l|} \hline
+IN1 & IN2 & OUT1 & OUT2 & 用途 \\ \hline \hline
+L & L & Z & Z & オープン \\ \hline
+L & H & L & H & 正転 \\ \hline
+H & L & H & L & 逆転 \\ \hline
+H & H & L & L & ブレーキ \\ \hline
+\end{tabular}
+\label{buhin}
+\end{table}
+
+また，真理値表の正転・逆転の際のHをPWM出力にすれば，PWM波形のデューティ比に応じたスピードでモーターを制御することができます．
+つまり，以下のコードがTA7291Pを用いたモーター制御の基本になります．
+\begin{minted}[frame=lines,framesep=2mm,baselinestretch=1.2,fontsize=\footnotesize,linenos,breaklines]{c}
+analogWrite(motorPin1, pwmValue);
+digitalWrite(motorPin2, LOW);
+\end{minted}
+これを左右のモーターそれぞれに適応させ，前進・後進・右旋回・左旋回をさせます．
+
+\subsection{Webからの操作}
+Webページからモーターを制御するために，URLクエリ文字列を利用します．URLクエリ文字列とはURLに付帯する引数のようなもので，たとえば\url{192.168.4.10/?val=abc}というURLであれば"valという引数の値はabcである"と解釈されます．また\url{192.168.4.10/?val1=abc&val2=123}というように\&で結ぶことで複数の引数を付帯させることもできます．ESPでは\tt{ESP8266WebServer.h}\rm{}でURLクエリ文字列の取得に関するかいくつかの関数が定義されています．次の関数はそれらの使用例です．
+\begin{minted}[frame=lines,framesep=2mm,baselinestretch=1.2,fontsize=\footnotesize,linenos,breaklines]{c}
+/**  Show URI args */
+void showUriArgs() {
+  Serial.println("---URI args---");
+  for (int i = 0; i < Server.args(); i++) { //Server.args(): クエリ文字列の引数の個数を取得
+    Serial.printf("%s: %s \n", Server.argName(i).c_str(), Server.arg(i).c_str()); 
+    //Server.argName(num): クエリ文字列のnum番目の引数名を取得
+    //Server.arg(num); クエリ文字列のnum番目の引数の値を取得
+  }
+}
+\end{minted}
+ESPに\url{192.168.4.10/?val1=abc&val2=123}というURLへリクエストがあった際にこの関数が実行されると，シリアルポートには
+\tt{
+
+---URL args---
+
+val1: abc
+
+val2: 123
+
+}\rm{}
+と表示されるはずです．
+また，\tt{Server.arg("val")}\rm{}というように\tt{Server.arg()}\rm{}にクエリ文字列の引数名を渡すと，その引数の値を取得できます．
+今回のコードではWebサーバーの進行方向をmotorModeで，モーターの回転速度をmotorValでそれぞれ指定することにします．
+
+
+
+\begin{minted}[frame=lines,framesep=2mm,baselinestretch=1.2,fontsize=\footnotesize,linenos,breaklines]{c}
+enum { M1_l = 4, M1_r = 5, M2_l = 12, M2_r = 13, Pilot = 16, //モーターを接続するピン及びパイロットランプを接続するピンの定義
+       Stop, Open, Forw, Back, Right, Left }; //motorModeの値となる定数
+
+typedef struct {
+  int _mode; //Webサーバーの進行方向を格納
+  int val; //モーターの回転速度を格納
+} motor_T;
+motor_T motor;
+
+/**************************************************
+  モーター制御に関する関数群
+ **************************************************/
+/**  左右2つのモーターに接続されるピンを初期化 */
+void motorSetup(const int m1_l, const int m1_r, const int m2_l, const int m2_r) {
+  pinMode(m1_l, OUTPUT);
+  pinMode(m1_r, OUTPUT);
+  pinMode(m2_l, OUTPUT);
+  pinMode(m2_r, OUTPUT);
+
+  digitalWrite(m1_l, LOW);
+  digitalWrite(m1_r, LOW);
+  digitalWrite(m2_l, LOW);
+  digitalWrite(m2_r, LOW);
+
+  analogWriteFreq(5);
+}
+
+/**  モーターをPWM制御する関数 */
+void motorDrive(int16_t pwmVal, const int m_l, const int m_r) {
+  pwmVal = constrain(pwmVal, -1024, 1024);
+
+  if (pwmVal >= 0) {
+    analogWrite(m_l, pwmVal);
+    digitalWrite(m_r, LOW);
+  } else {
+    pwmVal = abs(pwmVal);
+
+    digitalWrite(m_l, LOW);
+    analogWrite(m_r, pwmVal);
+  }
+}
+
+/**  stop */
+void stopMotor() {
+  digitalWrite(M1_l, LOW);
+  digitalWrite(M1_r, LOW);
+  digitalWrite(M2_l, LOW);
+  digitalWrite(M2_r, LOW);
+}
+
+/**  前進 */
+void goForward(int16_t velocity) {
+  motorDrive(velocity, M1_l, M1_r);
+  motorDrive(velocity, M2_l, M2_r);
+}
+
+/**  後進 */
+void goBack(int16_t velocity) {
+  motorDrive(-velocity, M1_l, M1_r);
+  motorDrive(-velocity, M2_l, M2_r);
+}
+
+/**  右旋回 */
+void turnRight(int16_t velocity) {
+  motorDrive(velocity, M1_l, M1_r);
+  motorDrive(-velocity, M2_l, M2_r);
+}
+
+/**  右旋回 */
+void turnLeft(int16_t velocity) {
+  motorDrive(-velocity, M1_l, M1_r);
+  motorDrive(velocity, M2_l, M2_r);
+}
+\end{minted}
+
 \section{WEBサーバーとしての動作}
 最低限のWEBサーバーとして，クライアントがHTTP GETでページを取得できること，不揮発性メモリにファイルを保存できること，不揮発性メモリ内のファイルを作成・改変・削除できるようにすること，の3つの機能を実装しました．
 \subsection{SPIFFSの利用}
@@ -213,103 +345,6 @@ void loop() {
 }
 \end{minted}
 
-\section{ラジコンとしての動作}
-\subsection{モータードライバの利用}
-    モーターの制御にはモータードライバIC TA7291Pを使用します．このICはArduinoの入門記事などでよく登場する，とても扱いやすいICです．制御方法も簡単で，2つの入力端子をマイコンのGPOに接続し，2つの出力をモーターのそれぞれの端子に接続して使います．以下にTA7291Pの真理値表を示します．
-\footnote{表中のZはハイインピーダンス(LともHとも定まらない状態)を表します}
-\footnote{正転・逆転はモーターの端子とOUT1・OUT2との接続の仕方によっては逆になります．}
-\begin{table}[H]
-\centering
-\caption{TA7291Pの動作}
-\begin{tabular}{|l|l|l|l|l|} \hline
-IN1 & IN2 & OUT1 & OUT2 & 用途 \\ \hline \hline
-L & L & Z & Z & オープン \\ \hline
-L & H & L & H & 正転 \\ \hline
-H & L & H & L & 逆転 \\ \hline
-H & H & L & L & ブレーキ \\ \hline
-\end{tabular}
-\label{buhin}
-\end{table}
-
-
-
-\begin{minted}[frame=lines,framesep=2mm,baselinestretch=1.2,fontsize=\footnotesize,linenos,breaklines]{c}
-enum { M1_l = 4, M1_r = 5, M2_l = 12, M2_r = 13, Pilot = 16,
-       Stop, Open, Forw, Back, Right, Left };
-
-typedef struct {
-  int _mode;
-  int val;
-} motor_T;
-motor_T motor;
-
-/**************************************************
-  モーター制御に関する関数群
- **************************************************/
-/**  左右2つのモーターに接続されるピンを初期化 */
-void motorSetup(const int m1_l, const int m1_r, const int m2_l, const int m2_r) {
-  pinMode(m1_l, OUTPUT);
-  pinMode(m1_r, OUTPUT);
-  pinMode(m2_l, OUTPUT);
-  pinMode(m2_r, OUTPUT);
-
-  digitalWrite(m1_l, LOW);
-  digitalWrite(m1_r, LOW);
-  digitalWrite(m2_l, LOW);
-  digitalWrite(m2_r, LOW);
-
-  analogWriteFreq(5);
-}
-
-/**  モーターをPWM制御する関数 */
-void motorDrive(int16_t pwmVal, const int m_l, const int m_r) {
-  pwmVal = constrain(pwmVal, -1024, 1024);
-
-  if (pwmVal >= 0) {
-    analogWrite(m_l, pwmVal);
-    digitalWrite(m_r, LOW);
-  } else {
-    pwmVal = abs(pwmVal);
-
-    digitalWrite(m_l, LOW);
-    analogWrite(m_r, pwmVal);
-  }
-}
-
-/**  stop */
-void stopMotor() {
-  digitalWrite(M1_l, LOW);
-  digitalWrite(M1_r, LOW);
-  digitalWrite(M2_l, LOW);
-  digitalWrite(M2_r, LOW);
-}
-
-/**  前進 */
-void goForward(int16_t velocity) {
-  motorDrive(velocity, M1_l, M1_r);
-  motorDrive(velocity, M2_l, M2_r);
-}
-
-/**  後進 */
-void goBack(int16_t velocity) {
-  motorDrive(-velocity, M1_l, M1_r);
-  motorDrive(-velocity, M2_l, M2_r);
-}
-
-/**  右旋回 */
-void turnRight(int16_t velocity) {
-  motorDrive(velocity, M1_l, M1_r);
-  motorDrive(-velocity, M2_l, M2_r);
-}
-
-/**  右旋回 */
-void turnLeft(int16_t velocity) {
-  motorDrive(-velocity, M1_l, M1_r);
-  motorDrive(velocity, M2_l, M2_r);
-}
-\end{minted}
-
-
 \section{おわりに}
-ESP-WROOM-02を使って自走式WWEBサーバーを作成することができました．今後の課題として，websocketを用いたリアルタイム性の高い操作を実現したいです．
+ESP-WROOM-02を使って自走式Webサーバーを作成することができました．今後の課題として，websocketを用いたリアルタイム性の高い操作を実現したいです．
 今回作成したソースコードは以下のレポジトリにあります．\url{https://github.com/w-haibara/Self-propelledWebServer}
