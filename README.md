@@ -11,6 +11,7 @@ $ latexmk -pvc main.tex
 ```
 それ以外の人は
 ``` bash
+$ docker build ./ -t techbook #初めてコンパイルするとき
 $ docker-compose up
 ```
 3GBくらいのdocker imageをダウンロードするので注意

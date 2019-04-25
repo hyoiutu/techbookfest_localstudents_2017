@@ -2,7 +2,7 @@ version: '3'
 
 services:
   texlive:
-    image: aruneko/texlive
+    image: techbook
     volumes:
       - "./:/texsrc"
     command: latexmk main
