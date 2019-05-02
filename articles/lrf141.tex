@@ -1,61 +1,61 @@
 \section{はじめに}
 
-最近の開発、主にその開発環境やインフラレイヤーにおいて無くてはならないものとしてDockerが挙げられる。そして、Dockerを使ってWebサービスのインフラ等を構築する場合よく利用するのはdocker-composeだろう。
-この章ではDockerの基本的な部分から紹介し、docker-composeの裏側を解説したあとにDocker Remote APIを使って自分でコンテナを制御するということについて紹介する。
+最近の開発，主にその開発環境やインフラレイヤーにおいて無くてはならないものとしてDockerが挙げられる．そして，Dockerを使ってWebサービスのインフラ等を構築する場合よく利用するのはdocker-composeだろう．
+この章ではDockerの基本的な部分から紹介し，docker-composeの裏側を解説したあとにDocker Remote APIを使って自分でコンテナを制御するということについて紹介する．
 
 
 \section{Dockerとは}
 
-Dockerそのものに関しては公式ドキュメントよりもさくらインターネットさんの「さくらのナレッジ Docker入門(第一回)~Dockerとは何か、何が良いのか~」で簡単に紹介されていたのでそちらを引用する。
-Dockerとはその記事で次のように紹介されている。\cite{sakura}
+Dockerそのものに関しては公式ドキュメントよりもさくらインターネットさんの「さくらのナレッジ Docker入門(第一回)~Dockerとは何か，何が良いのか~」で簡単に紹介されていたのでそちらを引用する．
+Dockerとはその記事で次のように紹介されている．\cite{sakura}
 
 \begin{quote}
-Dockerは、インフラ関係やDevOps界隈で注目されている技術の一つで、Docker社が開発している、コンテナ型の仮想環境を作成、配布、実行するためのプラットフォームです。
+Dockerは，インフラ関係やDevOps界隈で注目されている技術の一つで，Docker社が開発している，コンテナ型の仮想環境を作成，配布，実行するためのプラットフォームです．
 （https://www.docker.com/what-docker）
 
-Dockerは、Linuxのコンテナ技術を使ったもので、よく仮想マシンと比較されます。VirtualBoxなどの仮想マシンでは、ホストマシン上でハイパーバイザを利用しゲストOSを動かし、その上でミドルウェアなどを動かします。それに対し、コンテナはホストマシンのカーネルを利用し、プロセスやユーザなどを隔離することで、あたかも別のマシンが動いているかのように動かすことができます。そのため、軽量で高速に起動、停止などが可能です。
+Dockerは，Linuxのコンテナ技術を使ったもので，よく仮想マシンと比較されます．VirtualBoxなどの仮想マシンでは，ホストマシン上でハイパーバイザを利用しゲストOSを動かし，その上でミドルウェアなどを動かします．それに対し，コンテナはホストマシンのカーネルを利用し，プロセスやユーザなどを隔離することで，あたかも別のマシンが動いているかのように動かすことができます．そのため，軽量で高速に起動，停止などが可能です．
 \end{quote}
 
-これが全てとなる。Dockerコンテナを利用することで特にWebサービス開発の開発環境において共通のインフラをチーム全員で共有することができるなどの様々なメリットがある。
+これが全てとなる．Dockerコンテナを利用することで特にWebサービス開発の開発環境において共通のインフラをチーム全員で共有することができるなどの様々なメリットがある．
 
 
 \subsection{Dockerのアーキテクチャ}
-Dockerとはコンテナの色々に関わるプラットフォームを指しているが実際にコンテナを利用する場合にはdockerコマンドを通して使う場合が多い。
-dockerコマンドは何をしているかというと、docker remote apiを呼び出している。このdocker remote apiなるものは、Dockerのアーキテクチャに深く関係している。
+Dockerはコンテナの色々に関わるプラットフォームを指しているが実際にコンテナを利用する場合にはdockerコマンドを通して使う場合が多い．
+dockerコマンドは何をしているかというと，docker remote apiを呼び出している．このdocker remote apiなるものは，Dockerのアーキテクチャに深く関係している．
 
 
-Dockerのアーキテクチャはクライアント・サーバアーキテクチャとなっておりdockerコマンドはただのCLIツールである。
-そのただのCLIツールが何をしているかというとdocker daemonが提供しているREST APIライクなDocker Remote APIをコールしているに過ぎない。
+Dockerのアーキテクチャはクライアント・サーバアーキテクチャとなっておりdockerコマンドはただのCLIツールである．
+そのただのCLIツールが何をしているかというとdocker daemonが提供しているREST APIライクなDocker Remote APIをコールしているに過ぎない．
 
 
-Docker Remote APIはデフォルトでunixドメインソケットを用いることで利用できるようになっている。自身で設定することでtcpによるリクエストを許可することも出来る。これ移行の章ではそれを有効にしている前提で話を進めていく。
+Docker Remote APIはデフォルトでunixドメインソケットを用いることで利用できるようになっている．自身で設定することでtcpによるリクエストを許可することも出来る．これ移行の章ではそれを有効にしている前提で話を進めていく．
 
 \section{Docker Composeとは}
 
-Docker-Composeとは、前述のDockerコンテナを複数利用する場合にそれらをまとめて管理するためのツールである。
-Dockerコマンドだけでは何が問題かというと、例えばweb開発においてインフラをDockerコンテナで用意するならばNginxのコンテナにMySQLのコンテナ、PHPやRailsが動作するコンテナなど複数のコンテナが必要になってくる。
-これら全てをdocker runで呼び出すとシェルなどにまとめておく必要がある。そして利便性に欠ける。では、サービスに必要なコンテナ群を一箇所でまとめて管理してしまいたい。そういう場合にdocker-composeを利用するのは非常に有効な手段となる。
+Docker-Composeとは，前述のDockerコンテナを複数利用する場合にそれらをまとめて管理するためのツールである．
+Dockerコマンドだけでは何が問題かというと，例えばweb開発においてインフラをDockerコンテナで用意するならばNginxのコンテナにMySQLのコンテナ，PHPやRailsが動作するコンテナなど複数のコンテナが必要になってくる．
+これら全てをdocker runで呼び出すとシェルなどにまとめておく必要がある．そして利便性に欠ける．では，サービスに必要なコンテナ群を一箇所でまとめて管理してしまいたい．そういう場合にdocker-composeを利用するのは非常に有効な手段となる．
 
 
-そして、Docker ComposeはDocker Remote APIを通してdocker-compose.ymlに記載されているコンテナ群を管理している。
-この点がこれ以降の説明で非常に重要になっていく。
+そして，Docker ComposeはDocker Remote APIを通してdocker-compose.ymlに記載されているコンテナ群を管理している．
+この点がこれ以降の説明で非常に重要になっていく．
 
 \section{docker-composeを自作する}
 
-ここまで紹介した情報を元にこの章の本題である、Dockerコンテナの制御を行う。制御といっても何をするかというとDocker Remote APIを使って超絶最高にシンプルなdocker-composeを作ってみる。Golangで。書いたことあまりないけど。
+ここまで紹介した情報を元にこの章の本題である，Dockerコンテナの制御を行う．制御といっても何をするかというとDocker Remote APIを使って超絶最高にシンプルなdocker-composeを作ってみる．Golangで．書いたことあまりないけど．
 
 
-それではまず要件を以下に定義する。
+それではまず要件を以下に定義する．
 \begin{itemize}
-    \item ymlを解析して作成するコンテナやボリューム、ポートを設定できる
-    \item コンテナを走らせる。
-    \item コンテナを落とす。
+    \item ymlを解析して作成するコンテナやボリューム，ポートを設定できる
+    \item コンテナを走らせる．
+    \item コンテナを落とす．
     \item 起動しているコンテナのステータスを取る
 \end{itemize}
 
 \subsection{コマンドライン引数をパースする}
 
-まずは、cliツールを作る上でコマンドライン引数をパースする必要がある。そこで import flag を使って簡易的にパースしていく。今回のcliツールではup,down,statusまでできれば十分なのでそれだけ定義する。
+まずは，cliツールを作る上でコマンドライン引数をパースする必要がある．そこで import flag を使って簡易的にパースしていく．今回のcliツールではup,down,statusまでできれば十分なのでそれだけ定義する．
 
 \begin{minted}[frame=lines,framesep=2mm,baselinestretch=1.2,fontsize=\footnotesize,linenos,breaklines]{go}
 package main
@@ -84,7 +84,7 @@ func main() {
 
 \subsection{ymlをパースする}
 
-次にそれなりに重要な機能であるymlのパースを行う。ただパーサーから書いている時間はなかったのでここでは gopkg.in/yaml.v2 というパッケージを使用する。
+次にそれなりに重要な機能であるymlのパースを行う．ただパーサーから書いている時間はなかったのでここでは gopkg.in/yaml.v2 というパッケージを使用する．
 
 \begin{minted}[frame=lines,framesep=2mm,baselinestretch=1.2,fontsize=\footnotesize,linenos,breaklines]{go}
 package main
@@ -136,8 +136,8 @@ func main() {
 }
 \end{minted}
 
-コード自体はこれでいいのだがひとつ問題がある。docker-composeのようなパターンのymlを今回使ったライブラリではパースできないことだ。
-しかし、パーサーから探すのはめんどくさいので仕方なくymlの形式を以下のようにして lite-compose.yml とする。
+コード自体はこれでいいのだがひとつ問題がある．docker-composeのようなパターンのymlを今回使ったライブラリではパースできないことだ．
+しかし，パーサーから探すのはめんどくさいので仕方なくymlの形式を以下のようにして lite-compose.yml とする．
 
 \begin{minted}[frame=lines,framesep=2mm,baselinestretch=1.2,fontsize=\footnotesize,linenos,breaklines]{yaml}
 
@@ -149,7 +149,7 @@ services:
 
 \end{minted}
 
-これを実行すると構造体として表示される。ただこれだけでは色々と不十分なのでエラーハンドリングを追加してファイルを分割してみた。
+これを実行すると構造体として表示される．ただこれだけでは色々と不十分なのでエラーハンドリングを追加してファイルを分割してみた．
 
 \begin{minted}[frame=lines,framesep=2mm,baselinestretch=1.2,fontsize=\footnotesize,linenos,breaklines]{go}
 package main
@@ -225,12 +225,12 @@ func requireNotExist() error {
 
 \section{コンテナを制御する}
 
-ここまでやってきたら後はdocker remote apiを使ってdockerコンテナを立ち上げ落としてステータスを取れるようにする。
-docker remote api自体はunixドメインソケットかtcpまたはhttpでリクエストを飛ばすことで利用することができる。ここではそれらを順を追って説明していく。
-本来はそれらリクエスト部分を自作するつもりであったが今回は golang でdocker remote apiを利用できるライブラリのgithub.com/docker/dockerを使用する。
+ここまでやってきたら後はdocker remote apiを使ってdockerコンテナを立ち上げ落としてステータスを取れるようにする．
+docker remote api自体はunixドメインソケットかtcpまたはhttpでリクエストを飛ばすことで利用することができる．ここではそれらを順を追って説明していく．
+本来はそれらリクエスト部分を自作するつもりであったが今回は golang でdocker remote apiを利用できるライブラリのgithub.com/docker/dockerを使用する．
 
 
-実際にdocker remote apiを使ったコンテナ制御は以下のようになる。
+実際にdocker remote apiを使ったコンテナ制御は以下のようになる．
 \begin{minted}[frame=lines,framesep=2mm,baselinestretch=1.2,fontsize=\footnotesize,linenos,breaklines]{go}
 package main
 
@@ -342,17 +342,17 @@ func getDockerPs() {
 }
 \end{minted}
 
-ここでは、ライブラリを使用してHostConfigなどを設定し、コンテナを作成した上で起動させるという一連の流れを行っている。
-さらにportsやvolumesなど今回は導入しなかったが通常docker-compose.ymlで設定するようなパラメータ群を設定することもできるので興味があれば実際に試して欲しい。
+ここでは，ライブラリを使用してHostConfigなどを設定し，コンテナを作成した上で起動させるという一連の流れを行っている．
+さらにportsやvolumesなど今回は導入しなかったが通常docker-compose.ymlで設定するようなパラメータ群を設定することもできるので興味があれば実際に試して欲しい．
 
 \section{おわりに}
 
-ここで紹介したように、dockerとはプラットフォームであり普段使うようなdockerコマンドは実際にはdocker remote apiを叩いているに過ぎない。また、docker-composeはそれらをまとめて管理しているがこれもまたdocker remote apiを叩いているだけである。
-そのため、これらを応用すれば競技プログラミングやオンライン実行環境で実際にコードを動かす部分をユーザのアクションに併せて作成することができる。
-是非そのようなサービスを開発する際にここに書いてある知識を応用して貰えると締め切りの前日からこのようなものを作り始めた甲斐があるというものである。
+ここで紹介したように，dockerとはプラットフォームであり普段使うようなdockerコマンドは実際にはdocker remote apiを叩いているに過ぎない．また，docker-composeはそれらをまとめて管理しているがこれもまたdocker remote apiを叩いているだけである．
+そのため，これらを応用すれば競技プログラミングやオンライン実行環境で実際にコードを動かす部分をユーザのアクションに併せて作成することができる．
+是非そのようなサービスを開発する際にここに書いてある知識を応用して貰えると締め切りの前日からこのようなものを作り始めた甲斐があるというものである．
 
 
 \begin{thebibliography}{10}
-    \bibitem{sakura} Docker入門（第一回）～Dockerとは何か、何が良いのか～ | さくらのナレッジ https://knowledge.sakura.ad.jp/13265/
+    \bibitem{sakura} Docker入門（第一回）～Dockerとは何か，何が良いのか～ | さくらのナレッジ https://knowledge.sakura.ad.jp/13265/
     \bibitem{unixdomain} tcp-hist.ps http://osnet.cs.binghamton.edu/publications/TR-20070820.pdf
 \end{thebibliography}
