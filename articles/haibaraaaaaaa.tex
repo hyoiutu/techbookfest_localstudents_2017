@@ -1,8 +1,8 @@
 \section{はじめに}
-自宅サーバー，憧れますよね．そんな自宅サーバーをお手頃な価格で自作してしまいましょう．せっかくなのでモーターとタイヤをつけてしまいましょう．そうです，自走式WEBサーバーです．この章ではWiFiを扱うことのできるマイコン ESP-WROOM-02を用いた自走式WEBサーバーを作成します．(図 \ref{fig:webserver})
+自宅サーバー，憧れますよね．そんな自宅サーバーをお手頃な価格で自作してしまいましょう．せっかくなのでモーターとタイヤをつけてしまいましょう．そうです，自走式Webサーバーです．この章ではWi-Fiを扱うことのできるマイコン ESP-WROOM-02を用いた自走式Webサーバーを作成します(図 \ref{fig:webserver})．
 \footnote{本章に記載されたプログラム，回路図，その他工作物を参考にして製作した場合に生じた事故等について一切の責任を負いかねます．}
 \subsection{ESP-WROOM-02とは}
-ESP-WROOM-02は，上海の企業Espressif Systems のESP8266EXチップを搭載したWiFiモジュールです．いわゆる「技適」を取得しているため，日本国内で法的に安心して使えます．arduino言語で開発できることに加え，おおよそ600円で購入できる手軽さが魅力です．
+ESP-WROOM-02は，上海の企業Espressif Systems のESP8266EXチップを搭載したWi-Fiモジュールです．いわゆる「技適」を取得しているため，日本国内で法的に安心して使えます．arduino言語で開発できることに加え，おおよそ600円で購入できる手軽さが魅力です．
 \footnote{ESP-WROOM-02の開発環境の構築方法については， ESP8266 Arduino Coreの公式ドキュメント(\url{https://arduino-esp8266.readthedocs.io/en/latest/})や，僕のブログ(\url{https://haibara-works.hatenablog.com})の『ESP-WROOM-02を導入する』を参照してください．(ページ数の都合から本章ではその説明は割愛します)}
 
 \begin{figure}[htbp]
@@ -13,7 +13,7 @@ ESP-WROOM-02は，上海の企業Espressif Systems のESP8266EXチップを搭�
 \end{figure}
 
 \subsection{ハードウェアの準備}
-表\ref{buhin}に今回作る自走式WEBサーバーに必要な部品を示します．
+表\ref{buhin}に今回作る自走式Webサーバーに必要な部品を示します．
 \begin{table}[htb]
 \centering
 \caption{使うもの}
@@ -21,8 +21,8 @@ ESP-WROOM-02は，上海の企業Espressif Systems のESP8266EXチップを搭�
 部品 & 用途 \\ \hline \hline
 ESP-WROOM-02 & ESP本体  \\ \hline
 FT-232RQ & USBシリアル変換モジュール  \\ \hline
-抵抗(10 K$\Omega$) & プルアップ・プルダウン用  \\ \hline
-抵抗(470 K$\Omega$) & LEDの保護抵抗 \\ \hline
+抵抗(10 k$\Omega$) & プルアップ・プルダウン用  \\ \hline
+抵抗(470 k$\Omega$) & LEDの保護抵抗 \\ \hline
 LED & パイロットランプ  \\ \hline
 TA48033S & 電源レギュレータ(3.3 V) \\ \hline
 コンデンサ(0.33 $\mu$F) & 電源用パスコン  \\ \hline
@@ -63,7 +63,7 @@ digitalWrite(motorPin2, LOW);
 これを左右のモーターそれぞれに適応させ，前進・後進・右旋回・左旋回をさせます．
 
 \subsection{Webからの操作}
-Webページからモーターを制御するために，URLクエリ文字列を利用します．URLクエリ文字列とはURLに付帯する引数のようなもので，たとえば\url{192.168.4.10/?val=abc}というURLであれば"valという引数の値はabcである"と解釈されます．また\url{192.168.4.10/?val1=abc&val2=123}というように\&で結ぶことで複数の引数を付帯させることもできます．ESPでは\tt{ESP8266WebServer.h}\rm{}でURLクエリ文字列の取得に関するかいくつかの関数が定義されています．次の関数はそれらの使用例です．
+Webページからモーターを制御するために，URLクエリ文字列を利用します．URLクエリ文字列とはURLに付帯する引数のようなもので，たとえば\url{192.168.4.10/?val=abc}というURLであれば``valという引数の値はabcである"と解釈されます．また\url{192.168.4.10/?val1=abc&val2=123}というように\&で結ぶことで複数の引数を付帯させることもできます．ESPでは\tt{ESP8266WebServer.h}\rm{}でURLクエリ文字列の取得に関するかいくつかの関数が定義されています．次の関数はそれらの使用例です．
 \begin{minted}[frame=lines,framesep=2mm,baselinestretch=1.2,fontsize=\footnotesize,linenos,breaklines]{c}
 /**  Show URI args */
 void showUriArgs() {
@@ -174,14 +174,14 @@ void turnLeft(int16_t velocity) {
 }
 \end{minted}
 
-\section{WEBサーバーとしての動作}
-最低限のWEBサーバーとして，クライアントがHTTP GETでページを取得できること，不揮発性メモリにファイルを保存できること，不揮発性メモリ内のファイルを作成・改変・削除できるようにすること，の3つの機能を実装しました．
+\section{Webサーバーとしての動作}
+最低限のWebサーバーとして，クライアントがHTTP GETでページを取得できること，不揮発性メモリにファイルを保存できること，不揮発性メモリ内のファイルを作成・編集・削除できるようにすること，の3つの機能を実装しました．
 \subsection{SPIFFSの利用}
 ESPではSPIFFSというファイルシステムを使うことが出来ます．これはESPの不揮発性メモリの一部をストレージとして使えるようにするもので，プログラム中からC言語の\tt{fopen()}\rm{} と同じ要領でメモリにアクセス出来ます．この機能を用いてESPにファイルを保存します．
 また，ArduinoIDEにSPIFFSプラグイン(\url{https://github.com/esp8266/arduino-esp8266fs-plugin})をインストールすると，ArduinoIDEからESPのSPIFFSにファイルをアップロードすることができます．
 ESP8266 Arduino Coreの公式exampleの中にFSBrowserというスケッチが，まさにSPIFFSを用いたWebサーバーの実装になっています(\url{https://github.com/esp8266/Arduino/tree/master/libraries/ESP8266WebServer/examples/FSBrowser})．
 このスケッチにある関数\tt{String formatBytes(size\_t bytes)}\rm{}・\tt{bool handleFileRead(String path)}\rm{}・\tt{void handleFileUpload()}\rm{}・\tt{void handleFileDelete()}\rm{}・\tt{void  handleFileCreate()}\rm{}・\tt{void  handleFileList()}\rm{}を利用します．
-また，FSBrowser.inoと同じディレクトリの\tt{/data}\rm{}内にはいくつかのjsファイルやhtmlファイルが保存されています．その中にはSPIFFSに保存されているファイルの編集・改変・削除，新規ファイルのアップロードを行うことのできるWebGUIとして働くものや，現在のヒープメモリやGPIOの電位などをグラフで提供するものが含まれています．(図 \ref{fig:fsb})今回はこれらの\tt{/data}\rm{}内のファイルを使用して，SPIFFS管理のためのWebGUIとします．
+また，FSBrowser.inoと同じディレクトリの\tt{/data}\rm{}内にはいくつかのjsファイルやhtmlファイルが保存されています．その中にはSPIFFSに保存されているファイルの編集・削除，新規ファイルのアップロードを行うことのできるWebGUIとして働くものや，現在のヒープメモリやGPIOの電位などをグラフで提供するものが含まれています．(図 \ref{fig:fsb})今回はこれらの\tt{/data}\rm{}内のファイルを使用して，SPIFFS管理のためのWebGUIとします．
 
 \begin{figure}[htbp]
     \centering
@@ -191,7 +191,7 @@ ESP8266 Arduino Coreの公式exampleの中にFSBrowserというスケッチが�
 \end{figure}
 
 \subsection{Webページの表示}
-\tt{ESP8266WebSerber.h}\rm{}を用いて，クライアントからのHTTPリクエストを処理する際には，\tt{Server.on(path, handlerFunction);}\rm{}と記述することで，"\tt{path}\rm{}がリクエストされたら\tt{handlerFunction}\rm{}を実行する"ということができます．しかし，この方法では処理できる\tt{path}\rm{}の種類がコーディングの時点で固定されてしまいます．今回のようにSPIFFSを用いて，動的にファイルが変わり得る場合はどのように対処すればいいでしょうか．1つの方法は\tt{Server.on(path, handlerFunction)}\rm{}ではなく\tt{Server,onNotFound(handlerFunction)}\rm{}を用いることです．これはクライアントにリクエストされた\tt{path}\rm{}がどの\tt{Server.on}\rm{}でも指定されていない場合に，\tt{handlerFunction}\rm{}を呼び出すという関数で，その名の通り404 Not Foundを返すために使われます．しかし\tt{Server.on}\rm{}を記述しなければ任意の\tt{path}\rm{}がリクエストされたときに必ず\tt{handlerFunction}\rm{}が呼ばれます．この\tt{handlerFunction}\rm{}内で"リクエストされた\tt{path}\rm{}はSPIFFSに存在するか"を判断し，存在すればその\tt{path}\rm{}ごとの処理をし，存在しなければ404 Not Foundをクライアントに送信するという処理を行うことで，SPIFFS内の動的ファイルの変化に対応できます．
+\tt{ESP8266WebSerber.h}\rm{}を用いて，クライアントからのHTTPリクエストを処理する際には，\tt{Server.on(path, handlerFunction);}\rm{}と記述することで，``\tt{path}\rm{}がリクエストされたら\tt{handlerFunction}\rm{}を実行する"ということができます．しかし，この方法では処理できる\tt{path}\rm{}の種類がコーディングの時点で固定されてしまいます．今回のようにSPIFFSを用いて，動的にファイルが変わり得る場合はどのように対処すればいいでしょうか．1つの方法は\tt{Server.on(path, handlerFunction)}\rm{}ではなく\tt{Server,onNotFound(handlerFunction)}\rm{}を用いることです．これはクライアントにリクエストされた\tt{path}\rm{}がどの\tt{Server.on}\rm{}でも指定されていない場合に，\tt{handlerFunction}\rm{}を呼び出すという関数で，その名の通り404 Not Foundを返すために使われます．しかし\tt{Server.on}\rm{}を記述しなければ任意の\tt{path}\rm{}がリクエストされたときに必ず\tt{handlerFunction}\rm{}が呼ばれます．この\tt{handlerFunction}\rm{}内で``リクエストされた\tt{path}\rm{}はSPIFFSに存在するか"を判断し，存在すればその\tt{path}\rm{}ごとの処理をし，存在しなければ404 Not Foundをクライアントに送信するという処理を行うことで，SPIFFS内の動的ファイルの変化に対応できます．
 
 \begin{minted}[frame=lines,framesep=2mm,baselinestretch=1.2,fontsize=\footnotesize,linenos,breaklines]{c}
 #include <ESP8266WiFi.h>
@@ -206,7 +206,7 @@ const char* host = "esp8266fs";
 ESP8266WebServer Server(80);      //80番ポートを使用
 
 /**************************************************
-  WEBサーバーに関する関数群
+  Webサーバーに関する関数群
  **************************************************/
 /**  Show URI args */
 void showUriArgs() {
