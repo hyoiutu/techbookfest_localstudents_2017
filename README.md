@@ -1,17 +1,16 @@
-# 2019年度LOCAL学生部総大会
+# 2020年度LOCAL学生部総大会
 ## ファイル名
-* 
-* それぞれファイル名はTwitterのID名+.tex
+* それぞれファイル名は{アルファベット表記の名前}+.tex
   * chikuwa_IT.tex
-  * lrf141.tex
+  * haibara.tex
 ## コンパイル
-texlive2017をインストールしてる人は
+texlive2019をインストールしてる人は
 ``` bash
 $ latexmk -pvc main.tex
 ```
 それ以外の人は
 ``` bash
-$ docker build ./ -t techbook #初めてコンパイルするとき
+$ docker-compose build #初めてコンパイルするとき
 $ docker-compose up
 ```
 3GBくらいのdocker imageをダウンロードするので注意
