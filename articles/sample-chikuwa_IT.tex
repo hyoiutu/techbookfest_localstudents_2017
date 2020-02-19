@@ -5,7 +5,7 @@
 仮想化技術にはいくつか種類がありますが, この章では計算機資源を抽象化してOSなどに見せるプラットフォーム仮想化のことを指します. 仮想化することで複数の計算機資源を単一に見せたり, 単一の計算機資源を複数に見せることができます. そしてプラットフォーム仮想化を支えるための技術としてシステム仮想機械(VM, Virtual Machine)と呼ばれる計算機資源をエミュレートするソフトウェアが存在します. 仮想機械の実装はハイパーバイザを始めとしていくつか存在します. 例えば仮想専用サーバ(VPS, Virtual Private Server)のようなサービスでは図2.1にように, 物理サーバ上に仮想化OSによって複数の仮想サーバに分割してユーザに各仮想サーバを提供しています.
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=80mm]{./assets/chikuwa_ITasset/gray/vps.jpeg}
+    \includegraphics[width=80mm]{./assets/sample-chikuwa_ITasset/gray/vps.jpeg}
     \caption{VPSのイメージ}
     \label{fig:vps}
 \end{figure}
@@ -19,7 +19,7 @@
 主にVMware ESX/ESXiなどで採用されている方式で, モノリシックという英語で「1枚岩」という意味の通り，図2.2のようにハイパーバイザの中にデバイスドライバが含まれています. ハイパーバイザがストレージをはじめ,ネットワークや入力デバイスといったハードウェアへのアクセスをすべてを処理します. この方法の利点はハイパーバイザとデバイスドライバが密接に連携するため,オーバーヘッドが少なく効率的であることです. しかしながら, ハイパーバイザの中にデバイスドライバが存在しているため,ハイパーバイザ層でデバイスドライバを用意する必要があります. そのため, ハードウェアのサポートがマイクロカーネル型と比較して少なく, 使用するハードウェアに制限がかかってしまう場合があります. また, デバイスドライバをハイパーバイザに直接組み込むため, バグや脆弱性はハイパーバイザ全体に広がってしまいます.
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=80mm]{./assets/chikuwa_ITasset/gray/monolithic.jpeg}
+    \includegraphics[width=80mm]{./assets/sample-chikuwa_ITasset/gray/monolithic.jpeg}
     \caption{モノリシックカーネル型ベアメタルハイパーバイザ}
     \label{fig:monolithic}
 \end{figure}
@@ -27,13 +27,13 @@
 主にXenやHyper-Vで採用されている方式で,　図2.3のようにハイパーバイザを管理する仮想マシンと管理OSを用意します. この管理OSはLinuxはWindows Serverなど汎用OSを使用します. また, 管理OSはXenではドメイン0, Hyper-Vでは親パーティションと呼ばれています. この方式では, 図2.4のようにデバイスドライバはハイパーバイザではなく, ハイパーバイザ上の仮想マシンとして動作している管理OSのデバイスドライバを使用します. 仮想マシンからハードウェアにアクセスする時はゲストOSから仮想デバイスのインターフェースを経由してハイパーバイザから管理OSに渡されます. そして管理OSのデバイスドライバからハードウェアにアクセスします.この方法は, 汎用OSのデバイスドライバを使用することで, モノリシックカーネル型に比べてハードウェアのサポートが多く, ハードウェアの対応が柔軟であるという利点があります. 例えば, Hyper-VならWindows用のデバイスドライバを使用することができます. しかしながら, ハードウェアにアクセスする際にハイパーバイザから管理OSを経由するため, モノリシックカーネル型よりも性能が低下してしまいがちであり, 管理用の汎用OSがクラッシュした場合全てのVMがクラッシュしてしまうといった欠点が存在します.
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=80mm]{./assets/chikuwa_ITasset/gray/microkernel.jpeg}
+    \includegraphics[width=80mm]{./assets/sample-chikuwa_ITasset/gray/microkernel.jpeg}
     \caption{マイクロカーネル型ベアメタルハイパーバイザ}
     \label{fig:microkernel}
 \end{figure}
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=80mm]{./assets/chikuwa_ITasset/gray/microkernel_hardware.jpeg}
+    \includegraphics[width=80mm]{./assets/sample-chikuwa_ITasset/gray/microkernel_hardware.jpeg}
     \caption{マイクロカーネル型のハードウェアアクセス}
     \label{fig:microkernel_access}
 \end{figure}
@@ -42,7 +42,7 @@
 完全仮想化方式のハイパーバイザでは, ハードウェアの挙動をすべてエミュレートします. そのため, 何も変更も加えていないそのままのホストOSを動かすことができます. 1960年代にIBMが「トラップアンドエミュレート」とよばれる方法で完全仮想化を実装しようとしました. この方法ではゲストOSが特権がない状態(Ring3)で実行させ, 特権(Ring0)が必要な命令を実行しようとすると失敗します. その際にハイパーバイザがその失敗をトラップして原因を確認してからその命令をエミュレートすることによってゲストOSの期待する結果を返すことができ, ゲストOSにRing0以外で実行されていることを気づかせないようにすることができます. しかしながら, この手法は古典的ですべてのアーキテクチャに適用できるわけではありませんでした. 特にx86プロセッサの場合, ユーザ権限で実行できるセンシティブ命令と呼ばれる計算機資源の構成などの依存している命令が存在しているため, 実装を難しくさせていました. そこで, 「バイナリトランスレーション」と呼ばれる新しい手法が使われるようになりました. この手法では, センシティブな命令以外の命令は直接CPUで実行し, センシティブな命令はハイパーバイザで実行前に動的に他の命令に置き換えられます.
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=80mm]{./assets/chikuwa_ITasset/gray/binarytransration.jpeg}
+    \includegraphics[width=80mm]{./assets/sample-chikuwa_ITasset/gray/binarytransration.jpeg}
     \caption{バイナリトランスレーション}
     \label{fig:binarytranslation}
 \end{figure}
@@ -52,7 +52,7 @@
 ホスト型(Type2)はParallels DesktopやVirtualBoxなどで採用されている方式で, LinuxやWindowsといったホストOSの上でアプリケーションとして動作します. また, ハイパーバイザをインストールする先のPCをホストOSと呼びます. 主にサーバとしての仮想化よりもユーザがmacOS上でWindowsとwindows専用ソフトウェアを使用するといったようなクライアントサイドでの用途に用いられることが多いです. この方式の利点は, ホストOSを変更することもなく, アプリケーションとしてインストールすることができるため手軽に利用することができる点です. 最近ではVargrantのようなプロビジョニングツールが登場したことにより, 手軽に開発環境として仮想環境を用意することができるようにもなりました. しかしながら,ホスト型の欠点として仮想デバイスから物理デバイスにたどり着くまでにハイパーバイザ, ホストOSを経由する必要があるため, オーバヘッドがベアメタル型に比べて大きくなってしまいます.
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=80mm]{./assets/chikuwa_ITasset/gray/host.jpeg}
+    \includegraphics[width=80mm]{./assets/sample-chikuwa_ITasset/gray/host.jpeg}
     \caption{ホスト型ハイパーバイザ}
     \label{fig:hosthypervisor}
 \end{figure}
@@ -63,7 +63,7 @@
 chrootでは,図2.7のように現在のプロセスとその子プロセスのルートディレクトリを変更します. chroot後の環境から, 別のルートディレクトリや親のファイルシステムを見ることはできません. そのため, chroot監獄とも呼ばれます.しかしながら, chrootした環境内でchrootができる場合, この監獄はすぐに抜けることができてしまうため, 後述するnamespaceやcapabilitiesと併用して安全性を確保します.
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=80mm]{./assets/chikuwa_ITasset/gray/chroot.jpeg}
+    \includegraphics[width=80mm]{./assets/sample-chikuwa_ITasset/gray/chroot.jpeg}
     \caption{chroot}
     \label{fig:chroot}
 \end{figure}
@@ -78,7 +78,7 @@ IPC名前空間はプロセス間通信のリソースであるSystem V IPCオ�
 Mount名前空間は図2.8のようにファイルシステムのマウントポイントを分離することで異なる名前空間のファイルシステムにアクセスを分離することができます. 通常, 子プロセスは親プロセスと同じマウントポイントを認識します. しかし新しいMount名前空間の下では, 子プロセスは任意の変更を加えることができ,親プロセスやシステム全体のMount名前空間には影響を与えません. 例えば, 各コンテナごとにMount名前空間を分けて/var, /tmpを持たせることで独立したユーザ領域を見せることができます.
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=50mm]{./assets/chikuwa_ITasset/gray/mount.jpeg}
+    \includegraphics[width=50mm]{./assets/sample-chikuwa_ITasset/gray/mount.jpeg}
     \caption{Mount名前空間}
     \label{fig:mount}
 \end{figure}
@@ -87,7 +87,7 @@ Mount名前空間は図2.8のようにファイルシステムのマウントポ
 PID名前空間では, 図2.9のようにプロセスID空間を分離します. 異なるPID名前空間では同じプロセスIDを持つことができ, 子名前空間内のプロセスは親のプロセスについて知ることができません. しかしながら, 親名前空間のプロセスは子名前空間のプロセスについて知ることができます. PID名前空間をコンテナごとに分離することで, コンテナ内のプロセス群を中断再開することやコンテナ内のプロセスのPIDを保持したままコンテナを別のホストに移したりするようなことが可能になります.
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=50mm]{./assets/chikuwa_ITasset/gray/pid.jpeg}
+    \includegraphics[width=50mm]{./assets/sample-chikuwa_ITasset/gray/pid.jpeg}
     \caption{PID名前空間}
     \label{fig:pid}
 \end{figure}
