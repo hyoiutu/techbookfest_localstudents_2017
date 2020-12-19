@@ -4,13 +4,8 @@
 \newcommand{\articlepath}{./articles}
 \newcommand{\assetspath}{./assets}
 
-\newcommand{\jumpakuasset}{\assetspath/jumpakuasset}
-\newcommand{\takuzooasset}{\assetspath/takuzoo3868asset}
-\newcommand{\lrfasset}{\assetspath/lrf141asset}
-\newcommand{\materialofmouseasset}{\assetspath/mouse/gray}
-\newcommand{\keisukeasset}{\assetspath/keisuke495500asset}
-\newcommand{\chikuwaitasset}{\assetspath/chikuwa_ITasset/gray}
-\newcommand{\arunekoasset}{\assetpath/aruneko}
+\newcommand{\chikuwaitasset}{\assetspath/sample-chikuwa_ITasset/gray}
+\newcommand{\haibaraasset}{\assetspath/sample-haibaraasset}
 
 \usepackage{\stypath/localst17}
 \usepackage{\stypath/mymintedsetting}
@@ -22,7 +17,10 @@
 \usepackage{caption}
 
 %Takuzoo3868
-\usepackage{dirtree}
+%\usepackage{dirtree}
+\usepackage{here}
+\usepackage{fontawesome}
+\usepackage{tcolorbox}
 
 %Jumpaku
 \usepackage{pxrubrica}
@@ -32,48 +30,28 @@
 \usepackage{verbatim}
 
 %materialofmouse
-\usepackage{siunitx}
+%\usepackage{siunitx}
 
 \usepackage{amsmath}
 \usepackage{graphicx}
 
-\title{情報ボーイズの寄稿ノート}
-\author{うっひょい \and ちくうぇいと \and あわあわ \and けんつ \and さわだ \and Jumpaku \and あるねこ}
+%HSAU_Dosei
+\usepackage{ulem}
+
+\title{学生部同人誌2020sandbox}
+\author{はいばら \and ちくうぇいと }
 
 \date{}
 
 \begin{document}
 \frontmatter
 \maketitle
-\begin{myintroduce}{\keisukeasset/my_twitter_icon_gray.jpg}{うっひょい @keisuke495500}
-  \LaTeX 大好き人間です．この前は\LaTeX でニューラルネットワークとか
-  実装しました．デレマスの赤城みりあちゃんのプロデューサーを務めると共に
-  龍崎薫ちゃんの先生もやっています．\\
-  ブログ：\url{http://muscle-keisuke.hatenablog.com/}
+\begin{myintroduce}{\haibaraasset/icon.jpg}{はいばら @haibara}
+  美味しいご飯とソフトウェアとハードウェアがすきです．\\
+  LOCAL学生部の部長をしています．
 \end{myintroduce}
-\begin{myintroduce}{\chikuwaitasset/icon.jpg}{ちくうぇいと @chikuwa\_IT}
-  RubyでイケイケWEBエンジニアになるつもりだったのに, 気がついたらmrubyをOSの下に組み込んだりして完全にシステムプログラミング沼に落ちてしまいました．\\
-  どうしてこうなった．
-\end{myintroduce}
-\begin{myintroduce}{\materialofmouseasset/icon.png}{あわあわ @materialofmouse}
-  自分の生活を便利にしようと思った時か，面白いと思ったものがあるときしかプログラム書きません．
-  Linuxで何かを作るのが好きです．
-\end{myintroduce}
-\begin{myintroduce}{\lrfasset/icon_gray.jpg}{けんつ @lrf141}
-  カーネルからWebまで色々やってます．\\
-  インフラとScalaとJavaが大好物です．
-\end{myintroduce}
-\begin{myintroduce}{\takuzooasset/takuzoo_gray.png}{さわだ @takuzoo3868}
-  北の国に生きるコタツ星人．\\
-  セキュリティまわりが好き，興味が湧いたらとりあえず手を動かす．takuzooの由来は叔父に貸したポケモンにて，返ってきたときに付けられていた名前から．
-\end{myintroduce}
-\begin{myintroduce}{\jumpakuasset/JumpakuMark_250x250_gray.png}{Jumpaku @jumpaku}
-
-\end{myintroduce}
-
-\begin{myintroduce}{./assets/aruneko/icon_gray.jpg}{あるねこ @aruneko99}
-  この本の言い出しっぺで，LOCAL学生部の前部長．いつもはTwitterに生息中．
-  もし第2弾があればまた手に取ってくれるとありがたいです！
+\begin{myintroduce}{\chikuwaitasset/icon.jpg}{chikuwait}
+　ちくわさんです
 \end{myintroduce}
 
 
@@ -88,45 +66,48 @@
 %\addtolength{\oddsidemargin}{-20pt}
 %\addtolength{\evensidemargin}{18pt}
 
-\chapterauthor{うっひょい}
-\chapter{\LaTeX の乱数生成アルゴリズムを調べる}
-\input{\articlepath/keisuke495500}
+\chapterauthor{Yoshiki-Yamada}
+\chapter{GraalVM入門}
+\input{\articlepath/yoshiki-yamada}
 
-\chapterauthor{chikuwait(ちくうぇいと)}
-\chapter{超入門 仮想化技術}
-\input{\articlepath/chikuwa_IT}
+\chapterauthor{那由多}
+\chapter{仮タイトル}
+\input{\articlepath/nayuta_1999}
 
-\chapterauthor{あわあわ}
-\chapter{LEDで発電しよう！！！}
-\input{\articlepath/materialofmouse}
+\chapterauthor{kodamanbou}
+\chapter{仮タイトル}
+\input{\articlepath/kodamanbou}
 
-\chapterauthor{けんつ}
-\chapter{入門Linux Kernel}
-\input{\articlepath/lrf141}
+\chapterauthor{はいばら}
+\chapter{はいばら記事 仮タイトル}
+\input{\articlepath/w-haibara}
 
-\chapterauthor{さわだ}
-\chapter{自作エディタ入門編}
-\input{\articlepath/takuzoo3868}
+\chapterauthor{さたけ}
+\chapter{さたけ記事 仮タイトル}
+\input{\articlepath/satakenkoki}
 
-\chapterauthor{Jumpaku}
-\chapter{世界と孤独の\ruby[g]{説法}{エピローグ}}
-\input{\articlepath/Jumpaku}
+\chapterauthor{M.山田}
+\chapter{M.山田 記事 仮タイトル}
+\input{\articlepath/yamada_m}
 
-\chapterauthor{あるねこ}
-\chapter{関数型Python入門}
-\input{\articlepath/aruneko99}
+\chapterauthor{はいばら}
+\chapter{ESP-WROOM-02で作る \\自走式Webサーバー入門}
+\input{\articlepath/sample-haibara}
 
+\chapterauthor{ちくうぇいと}
+\chapter{ちくわさんの記事}
+\input{\articlepath/sample-chikuwa_IT}
+
+\chapterauthor{はいばら}
+\chapter{LOCAL学生部 活動報告}
+\input{\articlepath/activity}
+  
 \newpage
 \myimpression[%
-name=LOCAL Students\\情報ボーイズの寄稿ノート, %
-author=うっひょい， \and %
-ちくうぇいと， \and %
-あわあわ， \\ \and %
-けんつ， \and %
-さわだ， \and %
-Jumpaku， \and %
-あるねこ, %
-date=2018年4月22日, %
+name=LOCAL Students\\情報ボーイズの寄稿ノート 2.0, %
+author=はいばら， \and %
+ちくうぇいと, %
+date=2020年5月3日, %
 publisher=LOCAL学生部, %
 print=有限会社ねこのしっぽ %
 ]%
